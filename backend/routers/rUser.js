@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 
 //Get Request
 router.get(`/`, async (req, res) => {
-    const UserList = await User.find().select('-passwordHash');
+    const UserList = await User.find().select('-passwordHash'); //( '-passwordHash', gets all details except password)
 
     if(!UserList){
         res.status(500).json({success: false})
@@ -84,10 +84,17 @@ router.delete('/:productId', (req, res) => {
 
 //Set up user login
 router.post('/login', async (req, res) => {
+    const secret = process.env.secret
     const user = await User.findOne({email: req.body.email}) //find one by email
 
     if(user && bcrypt.compareSync(req.body.password, user.passwordHash)){ 
-        res.status(200).send('user Authenticated')
+       const token = jwt.sign(
+           {
+               userId: user.Id
+           }, secret,{expiresIn: '1d'} //jwt expiration after a day
+       )
+        
+        res.status(200).send({user:user.email,token:token})
     } 
     else {
         res.status(400).send('password is wrong!')
